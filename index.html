@@ -67,12 +67,26 @@
 
         <div class="actions">
             <button id="randomRivers">Random rivers</button>
-            <div class="sep"></div>
-            <button id="exportSvg">Export SVG</button>
-            <button id="exportPng">Export PNG</button>
-            <button id="exportJson">Export JSON</button>
-            <button id="copyJson">Copy JSON</button>
-            <button id="copyBga" disabled>Copy BGA format</button>
+        </div>
+
+        <div class="export" id="exportSection">
+            <h3 class="export-title">Export</h3>
+            <p class="export-hint" id="exportHint">Exporting the current layout. Generate colors to also export the terrain map and BGA format.</p>
+            <div class="export-group">
+                <span class="export-label">Download file</span>
+                <div class="export-buttons">
+                    <button id="exportSvg" title="Download the map as a vector SVG image.">SVG</button>
+                    <button id="exportPng" title="Download the map as a PNG image.">PNG</button>
+                    <button id="exportJson" title="Download the map data as JSON.">JSON</button>
+                </div>
+            </div>
+            <div class="export-group">
+                <span class="export-label">Copy to clipboard</span>
+                <div class="export-buttons">
+                    <button id="copyJson" title="Copy the map data as JSON.">JSON</button>
+                    <button id="copyBga" disabled title="Generate colors first to copy the BGA format.">BGA format</button>
+                </div>
+            </div>
         </div>
         <p class="small">Coordinates are zero-based (x = column, y = row); rows alternate length as in the reference generator.</p>
     </aside>

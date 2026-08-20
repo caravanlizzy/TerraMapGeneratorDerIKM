@@ -122,9 +122,16 @@
         $('editHint').style.display = colored ? 'none' : 'block';
         $('swapHint').style.display = colored ? 'block' : 'none';
         $('backToLayout').style.display = colored ? 'inline-block' : 'none';
+        // The BGA format only exists once terrain colors are generated.
         $('copyBga').disabled = !colored;
         // Layout-editing controls are only meaningful in edit mode.
         $('randomRivers').disabled = colored;
+        // Make the primary action self-describing for the current mode.
+        $('generateColors').textContent = colored ? 'Regenerate colors' : 'Generate colors';
+        // Clarify what the export buttons currently act on.
+        $('exportHint').textContent = colored
+            ? 'Exporting the generated terrain map. SVG/PNG capture the current view; JSON and BGA include the colors.'
+            : 'Exporting the current layout. Generate colors to also export the terrain map and BGA format.';
         if (colored) {
             const sel = state.selected.length;
             $('swapStatus').textContent = sel === 0
