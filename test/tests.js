@@ -127,6 +127,50 @@ function runTests() {
         }
     })();
 
+    (function testEvaluation() {
+        // evaluate() returns sane, non-negative imbalance metrics on a finished map.
+        const p = TM.layout.getPreset('original');
+        const map = new TM.TerrainMapGenerator(p.height, p.width, p.form, p.rivers);
+        map.generate();
+        const ev = map.evaluate();
+        assert(ev.colorImbalance >= 0 && isFinite(ev.colorImbalance), 'evaluate() gives a finite color imbalance');
+        assert(ev.riverImbalance >= 0 && isFinite(ev.riverImbalance), 'evaluate() gives a finite river imbalance');
+        assert(Math.abs(ev.land - (map.width * map.height - Math.floor((map.height + map.form) / 2)
+            - [...map.rivers].filter(r => {
+                const [x, y] = r.split(',').map(Number);
+                return !TM.geometry.outOfBounds(x, y, map.width, map.height, map.form);
+            }).length)) < 0.5, 'evaluate() land count matches land hexes');
+
+        // evaluateQuality flags a threshold that is impossible to meet.
+        const strict = TM.evaluateQuality({ colorImbalance: 99, riverImbalance: 99 },
+            { maxColorImbalance: 0, maxRiverImbalance: 0 });
+        assert(strict.passed === false && strict.reasons.length === 2, 'evaluateQuality rejects and reports both failures');
+        const lax = TM.evaluateQuality({ colorImbalance: 0, riverImbalance: 0 },
+            { maxColorImbalance: 3, maxRiverImbalance: 10 });
+        assert(lax.passed === true && lax.reasons.length === 0, 'evaluateQuality accepts a balanced map');
+    })();
+
+    (function testGenerateAccepted() {
+        const p = TM.layout.getPreset('original');
+
+        // Impossible thresholds -> nothing accepted, best attempt kept, failures reported.
+        const strictMap = new TM.TerrainMapGenerator(p.height, p.width, p.form, p.rivers);
+        const strictReport = strictMap.generateAccepted({ maxColorImbalance: 0, maxRiverImbalance: 0, maxTries: 4 });
+        assert(strictReport.accepted === false, 'generateAccepted: impossible criteria are not accepted');
+        assert(strictReport.tries === 4, 'generateAccepted: uses all tries when nothing passes');
+        assert(strictReport.failures.length === 4, 'generateAccepted: records one failure per try');
+        assert(strictReport.best && strictReport.best.attempt >= 1, 'generateAccepted: keeps a best attempt');
+        // A full, valid map is still produced (the best attempt).
+        assert(validColoredMap(strictMap).ok, 'generateAccepted: best attempt is a valid full map');
+
+        // Lax thresholds -> accepted, first accepted map kept.
+        const laxMap = new TM.TerrainMapGenerator(p.height, p.width, p.form, p.rivers);
+        const laxReport = laxMap.generateAccepted({ maxColorImbalance: 999, maxRiverImbalance: 999, maxTries: 10 });
+        assert(laxReport.accepted === true, 'generateAccepted: lax criteria are accepted');
+        assert(laxReport.tries === 1, 'generateAccepted: accepts on the first try when possible');
+        assert(validColoredMap(laxMap).ok, 'generateAccepted: accepted map is valid and full');
+    })();
+
     (function testColorDistance() {
         const { colorDistance } = TM.colors;
         assert(colorDistance('red', 'red') === 0, 'distance red-red = 0');

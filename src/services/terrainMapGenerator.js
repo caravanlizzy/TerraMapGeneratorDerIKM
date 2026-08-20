@@ -71,6 +71,27 @@
         return work;
     }
 
+    function round1(n) { return Math.round(n * 10) / 10; }
+
+    // Default acceptance thresholds (mirror the Python number/river-access tests).
+    const DEFAULT_CRITERIA = { maxColorImbalance: 3, maxRiverImbalance: 10, maxTries: 50 };
+
+    // Decide whether an evaluation passes the given criteria. Returns
+    // { passed, reasons }, where `reasons` explains every failed threshold.
+    function evaluateQuality(evaluation, criteria) {
+        const c = Object.assign({}, DEFAULT_CRITERIA, criteria || {});
+        const reasons = [];
+        if (evaluation.colorImbalance > c.maxColorImbalance) {
+            reasons.push('color imbalance ' + round1(evaluation.colorImbalance)
+                + ' > allowed ' + c.maxColorImbalance);
+        }
+        if (evaluation.riverImbalance > c.maxRiverImbalance) {
+            reasons.push('river-access imbalance ' + round1(evaluation.riverImbalance)
+                + ' > allowed ' + c.maxRiverImbalance);
+        }
+        return { passed: reasons.length === 0, reasons };
+    }
+
     class TerrainMapGenerator {
         /**
          * @param {number} height number of rows
@@ -288,6 +309,127 @@
             return this.map;
         }
 
+        // Generate maps until one satisfies `criteria`, keeping the FIRST accepted
+        // map. If none passes within `maxTries`, the best-scoring attempt (lowest
+        // combined imbalance) is kept so something is always shown.
+        //
+        // Returns a report:
+        //   { accepted, tries, evaluation, criteria, failures[], best }
+        // where `failures` lists the rejected attempts (attempt #, reasons, metrics)
+        // and `best` points at the kept attempt when nothing was accepted.
+        generateAccepted(criteria) {
+            const c = Object.assign({}, DEFAULT_CRITERIA, criteria || {});
+            const maxTries = Math.max(1, c.maxTries | 0);
+            const failures = [];
+            let best = null; // { evaluation, snapshot } with the lowest total imbalance
+
+            for (let attempt = 1; attempt <= maxTries; attempt++) {
+                this.generate();
+                const evaluation = this.evaluate();
+                const check = evaluateQuality(evaluation, c);
+                if (check.passed) {
+                    return { accepted: true, tries: attempt, evaluation, criteria: c, failures, best: null };
+                }
+                failures.push({ attempt, reasons: check.reasons, evaluation });
+
+                const total = evaluation.colorImbalance + evaluation.riverImbalance;
+                if (!best || total < best.total) {
+                    best = { attempt, total, evaluation, snapshot: Object.assign({}, this.map) };
+                }
+            }
+
+            // Nothing passed: restore the best attempt so the UI still has a map.
+            if (best) this.map = best.snapshot;
+            return {
+                accepted: false,
+                tries: maxTries,
+                evaluation: best ? best.evaluation : this.evaluate(),
+                criteria: c,
+                failures,
+                best
+            };
+        }
+
+        /* ---------------- quality evaluation ---------------- */
+
+        // Color at (x, y) or '' when out of bounds (port of Python mapfunction).
+        mapAt(x, y) {
+            if (this.outOfBounds(x, y)) return '';
+            return this.get(x, y);
+        }
+
+        // True for finished water and not-yet-generated river markers.
+        isWater(c) { return c === WATER || c === RIVER; }
+
+        // River-access rating of a single hex (0, 1 or 2). Port of Python river_access.
+        // 2 => the hex touches water on "opposite-ish" sides (a strong river spot),
+        // 1 => it merely touches water somewhere, 0 => no adjacent water.
+        riverAccess(x, y) {
+            const c = this.get(x, y);
+            if (this.isWater(c) || this.outOfBounds(x, y)) return 0;
+            let adjRiver = false;
+            for (let dir = 0; dir < 6; dir++) {
+                const [nx, ny] = this.nextHex(x, y, dir);
+                if (!this.isWater(this.mapAt(nx, ny))) continue;
+
+                const opp = this.nextHex(x, y, (dir + 3) % 6);
+                if (this.isWater(this.mapAt(opp[0], opp[1]))) return 2;
+
+                const p2 = this.nextHex(x, y, (dir + 2) % 6);
+                const p1 = this.nextHex(x, y, (dir + 1) % 6);
+                if (this.isWater(this.mapAt(p2[0], p2[1])) && !this.isWater(this.mapAt(p1[0], p1[1]))) return 2;
+
+                const m2 = this.nextHex(x, y, ((dir - 2) % 6 + 6) % 6);
+                const m1 = this.nextHex(x, y, ((dir - 1) % 6 + 6) % 6);
+                if (this.isWater(this.mapAt(m2[0], m2[1])) && !this.isWater(this.mapAt(m1[0], m1[1]))) return 2;
+
+                adjRiver = true;
+            }
+            return adjRiver ? 1 : 0;
+        }
+
+        // Total river-access rating of all hexes of a given color.
+        riverAccessScore(color) {
+            let score = 0;
+            for (const k in this.map) {
+                if (this.map[k] !== color) continue;
+                const [x, y] = k.split(',').map(Number);
+                score += this.riverAccess(x, y);
+            }
+            return score;
+        }
+
+        // Evaluate the balance of a finished map. Returns the two headline metrics
+        // used to accept/reject a map (both are "worst deviation from the average",
+        // so lower is better):
+        //   colorImbalance - how far the most over/under-represented color is from
+        //                    an even share of the land hexes (port of number_test).
+        //   riverImbalance - how much more river access the luckiest color has than
+        //                    the average color (port of river_access_saldo).
+        evaluate() {
+            const counts = {};
+            let land = 0;
+            for (const c of TERRAINS) { counts[c] = this.stock(c); land += counts[c]; }
+            const avg = land / 7;
+
+            let colorImbalance = 0;
+            for (const c of TERRAINS) {
+                colorImbalance = Math.max(colorImbalance, Math.abs(counts[c] - avg));
+            }
+
+            const riverScores = {};
+            let riverTotal = 0;
+            for (const c of TERRAINS) { riverScores[c] = this.riverAccessScore(c); riverTotal += riverScores[c]; }
+            const riverAvg = riverTotal / 7;
+
+            let riverImbalance = 0;
+            for (const c of TERRAINS) {
+                riverImbalance = Math.max(riverImbalance, riverScores[c] - riverAvg);
+            }
+
+            return { counts, land, avg, colorImbalance, riverScores, riverAvg, riverImbalance };
+        }
+
         // BGA map-file format string. Port of Python bga_format.
         bgaFormat() {
             const rows = [];
@@ -317,4 +459,6 @@
 
     TM.TerrainMapGenerator = TerrainMapGenerator;
     TM.pathCost = pathCost;
+    TM.evaluateQuality = evaluateQuality;
+    TM.DEFAULT_QUALITY_CRITERIA = DEFAULT_CRITERIA;
 })(window.TM = window.TM || {});
