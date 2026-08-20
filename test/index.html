@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Terra Mystica Map Tool &ndash; Tests</title>
+    <style>
+        body { margin: 20px; font-family: system-ui, -apple-system, Segoe UI, sans-serif; color: #222; }
+        h1 { font-size: 18px; }
+        #summary { font-size: 15px; font-weight: 700; margin: 10px 0 16px; }
+        #summary.ok { color: #2e7d32; }
+        #summary.bad { color: #c62828; }
+        #results { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; line-height: 1.6; }
+        #results .pass { color: #2e7d32; }
+        #results .fail { color: #c62828; font-weight: 700; }
+        /* The controller needs its DOM to exist; keep it off-screen for the test page. */
+        #appDom { position: absolute; left: -10000px; top: 0; width: 1px; height: 1px; overflow: hidden; }
+    </style>
+</head>
+<body>
+<h1>Terra Mystica Map Tool &ndash; Browser Tests</h1>
+<p>Open this file in a browser to run the suite. Results also appear in the console.</p>
+<div id="summary">Running&hellip;</div>
+<div id="results"></div>
+
+<!-- Hidden DOM required by the app controller (app.js) to initialize. -->
+<div id="appDom" aria-hidden="true">
+    <input id="width" type="number" value="13">
+    <input id="height" type="number" value="9">
+    <select id="form">
+        <option value="0">0</option>
+        <option value="1">1</option>
+    </select>
+    <select id="preset"></select>
+    <button id="newMap"></button>
+    <button id="generateColors"></button>
+    <button id="backToLayout"></button>
+    <button id="randomRivers"></button>
+    <button id="exportSvg"></button>
+    <button id="exportPng"></button>
+    <button id="exportJson"></button>
+    <button id="copyJson"></button>
+    <button id="copyBga"></button>
+    <span id="statW"></span>
+    <span id="statH"></span>
+    <span id="statForm"></span>
+    <span id="statTotal"></span>
+    <span id="statLand"></span>
+    <span id="statRiver"></span>
+    <i id="landSwatch"></i>
+    <p id="editHint"></p>
+    <p id="swapHint"></p>
+    <div id="swapStatus"></div>
+    <svg id="map" xmlns="http://www.w3.org/2000/svg" aria-label="Hex map"></svg>
+</div>
+
+<!-- Services (no external dependencies) -->
+<script src="../src/services/colors.js"></script>
+<script src="../src/services/hexGeometry.js"></script>
+<script src="../src/services/terrainMapGenerator.js"></script>
+<script src="../src/services/layoutGenerator.js"></script>
+<!-- UI -->
+<script src="../src/ui/mapRenderer.js"></script>
+<script src="../src/ui/app.js"></script>
+<!-- Test runner -->
+<script src="tests.js"></script>
+</body>
+</html>

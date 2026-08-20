@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Terra Mystica Map Layout Tool</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header>
+    <h1>Terra Mystica Map Layout Tool</h1>
+    <div class="controls">
+        <label>Width (X)<input id="width" type="number" min="1" max="40" value="13"></label>
+        <label>Height (Y)<input id="height" type="number" min="1" max="40" value="9"></label>
+        <label>Form
+            <select id="form">
+                <option value="0">0 &ndash; top row longer</option>
+                <option value="1">1 &ndash; top row shorter</option>
+            </select>
+        </label>
+        <label>Preset
+            <select id="preset">
+                <option value="">&mdash; none &mdash;</option>
+            </select>
+        </label>
+        <button id="newMap">New empty map</button>
+        <button class="primary" id="generateColors">Generate colors</button>
+        <button id="backToLayout" style="display:none">Back to layout</button>
+    </div>
+</header>
+
+<main>
+    <aside>
+        <h2>Map editor</h2>
+        <p class="hint" id="editHint">
+            Click a hex to toggle it between <b>land</b> and <b>river</b>.
+            River hexes are shown blue. Pick a preset or randomize a layout, then
+            press <b>Generate colors</b> to distribute the seven terrain colors.
+        </p>
+        <p class="hint" id="swapHint" style="display:none">
+            Colors generated. Click <b>exactly two land hexes</b> to swap them
+            (water hexes cannot be swapped). Click a selected hex again to deselect it.
+        </p>
+
+        <div class="legend">
+            <div class="swatch"><i id="landSwatch" style="background:#f5e6b0"></i> Land</div>
+            <div class="swatch"><i style="background:#4aa9e8"></i> River (editing)</div>
+            <div class="swatch"><i style="background:#ffffff"></i> Water (generated)</div>
+        </div>
+
+        <div class="stat"><span>Width</span><b id="statW">13</b></div>
+        <div class="stat"><span>Height</span><b id="statH">9</b></div>
+        <div class="stat"><span>Form</span><b id="statForm">0</b></div>
+        <div class="stat"><span>Total hexes</span><b id="statTotal">117</b></div>
+        <div class="stat"><span>Land hexes</span><b id="statLand">117</b></div>
+        <div class="stat"><span>River hexes</span><b id="statRiver">0</b></div>
+
+        <div id="swapStatus"></div>
+
+        <div class="actions">
+            <button id="randomRivers">Random rivers</button>
+            <div class="sep"></div>
+            <button id="exportSvg">Export SVG</button>
+            <button id="exportPng">Export PNG</button>
+            <button id="exportJson">Export JSON</button>
+            <button id="copyJson">Copy JSON</button>
+            <button id="copyBga" disabled>Copy BGA format</button>
+        </div>
+        <p class="small">Coordinates are zero-based (x = column, y = row); rows alternate length as in the reference generator.</p>
+    </aside>
+
+    <section id="canvasWrap">
+        <svg id="map" xmlns="http://www.w3.org/2000/svg" aria-label="Hex map"></svg>
+    </section>
+</main>
+
+<!-- Services (no external dependencies) -->
+<script src="src/services/colors.js"></script>
+<script src="src/services/hexGeometry.js"></script>
+<script src="src/services/terrainMapGenerator.js"></script>
+<script src="src/services/layoutGenerator.js"></script>
+<!-- UI -->
+<script src="src/ui/mapRenderer.js"></script>
+<script src="src/ui/app.js"></script>
+</body>
+</html>

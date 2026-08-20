@@ -1,0 +1,37 @@
+:root { --panel:#f4f4f4; --border:#bbb; --text:#222; --land:#f5e6b0; --river:#4aa9e8; }
+* { box-sizing:border-box; }
+body { margin:0; font-family:system-ui,-apple-system,Segoe UI,sans-serif; color:var(--text); background:#fff; }
+header { padding:14px 18px; border-bottom:1px solid #ddd; display:flex; gap:18px; align-items:center; flex-wrap:wrap; }
+header h1 { font-size:18px; margin:0; }
+.controls { display:flex; gap:12px; align-items:end; flex-wrap:wrap; }
+label { font-size:12px; display:flex; flex-direction:column; gap:4px; }
+input[type=number], input[type=color], select { height:34px; border:1px solid var(--border); border-radius:6px; background:#fff; }
+input[type=number] { width:72px; padding:4px 8px; }
+input[type=color] { width:52px; padding:2px; }
+select { padding:4px 8px; }
+button { height:34px; padding:0 12px; border:1px solid #aaa; border-radius:6px; background:#fff; cursor:pointer; }
+button:hover:not(:disabled) { background:#eee; }
+button:disabled { opacity:.45; cursor:not-allowed; }
+button.primary { background:#222; color:#fff; border-color:#222; }
+button.primary:hover:not(:disabled) { background:#000; }
+main { display:flex; height:calc(100vh - 69px); min-height:500px; }
+aside { width:290px; padding:16px; border-right:1px solid #ddd; background:var(--panel); overflow:auto; }
+aside h2 { font-size:14px; margin:0 0 10px; }
+.hint { font-size:13px; line-height:1.45; color:#555; margin:0 0 16px; }
+.stat { padding:10px 0; border-top:1px solid #ddd; font-size:13px; display:flex; justify-content:space-between; }
+.legend { margin:16px 0; display:grid; gap:8px; }
+.swatch { display:flex; align-items:center; gap:8px; font-size:13px; }
+.swatch i { width:20px; height:20px; border:1px solid #777; border-radius:4px; display:inline-block; }
+.actions { display:grid; gap:8px; margin-top:16px; }
+.actions .sep { border-top:1px solid #ddd; margin:4px 0; }
+#swapStatus { font-size:12px; color:#333; margin-top:8px; font-weight:600; }
+#canvasWrap { flex:1; overflow:auto; background:#fafafa; position:relative; }
+svg { display:block; margin:24px; }
+.hex { cursor:pointer; transition:filter .08s; }
+.hex:hover { filter:brightness(1.08); }
+.label { font-size:11px; text-anchor:middle; dominant-baseline:middle; pointer-events:none; }
+.small { font-size:11px; color:#666; margin-top:8px; }
+@media (max-width:700px) {
+    aside { width:230px; }
+    main { height:auto; min-height:calc(100vh - 69px); }
+}
