@@ -14,7 +14,7 @@
     const svg = document.getElementById('map');
     const $ = (id) => document.getElementById(id);
 
-    const LAND_COLOR = '#f5e6b0'; // default (bright) beige for land hexes
+    const LAND_COLOR = '#faedbf'; // default (bright) beige for land hexes
 
     const state = {
         width: 13,
@@ -23,7 +23,8 @@
         rivers: new Set(),   // "x,y" of river hexes (edit mode)
         mode: 'edit',        // 'edit' | 'colored'
         map: null,           // TM.TerrainMapGenerator instance (colored mode)
-        selected: []         // [[x,y], ...] land hexes selected for swapping
+        selected: [],        // [[x,y], ...] land hexes selected for swapping
+        qualityReport: null  // last generateAccepted() report (colored mode)
     };
 
     const key = (x, y) => x + ',' + y;
@@ -34,7 +35,7 @@
         const river = state.rivers.has(key(x, y));
         return {
             fill: river ? '#4aa9e8' : LAND_COLOR,
-            stroke: river ? '#0b3c5d' : '#1b5e20',
+            stroke: river ? '#0b3c5d' : '#222',
             strokeWidth: 1,
             label: (x + 1) + ',' + (y + 1),
             labelColor: river ? '#fff' : '#222'
@@ -86,11 +87,13 @@
                 width: state.width, height: state.height, form: state.form,
                 cellFor: coloredCell, onClick: onColoredClick
             });
+            renderQualityReport(state.qualityReport);
         } else {
             TM.renderer.render(svg, {
                 width: state.width, height: state.height, form: state.form,
                 cellFor: editCell, onClick: onEditClick
             });
+            renderQualityReport(null);
         }
         updateStats();
         updateModeUi();
@@ -145,6 +148,7 @@
         state.rivers.clear();
         state.map = null;
         state.selected = [];
+        state.qualityReport = null;
         state.mode = 'edit';
         renderCurrent();
     }
@@ -156,6 +160,7 @@
         state.rivers = new Set(layout.rivers.map(r => key(r[0], r[1])));
         state.map = null;
         state.selected = [];
+        state.qualityReport = null;
         state.mode = 'edit';
         $('width').value = state.width;
         $('height').value = state.height;
@@ -163,12 +168,92 @@
         renderCurrent();
     }
 
+    function readQualityCriteria() {
+        const def = TM.DEFAULT_QUALITY_CRITERIA;
+        const num = (id, fallback, min) => {
+            const v = +$(id).value;
+            return Number.isFinite(v) && v >= min ? v : fallback;
+        };
+        const criteria = {
+            maxColorImbalance: num('maxColorImbalance', def.maxColorImbalance, 0),
+            maxRiverImbalance: num('maxRiverImbalance', def.maxRiverImbalance, 0),
+            maxTries: Math.min(1000, Math.round(num('maxTries', def.maxTries, 1)))
+        };
+        $('maxColorImbalance').value = criteria.maxColorImbalance;
+        $('maxRiverImbalance').value = criteria.maxRiverImbalance;
+        $('maxTries').value = criteria.maxTries;
+        return criteria;
+    }
+
+    function round1(n) { return Math.round(n * 10) / 10; }
+
+    // A metric row: the measured value, the configured limit, and a plain-English
+    // explanation of what the number actually means (0 is always "perfectly even").
+    function metricRow(label, value, max, explanation) {
+        return '<div class="metric">'
+            + '<div class="metric-line">'
+            + '<span class="metric-name">' + label + '</span>'
+            + '<span class="metric-value">' + round1(value) + '</span>'
+            + '<span class="metric-max">/ max ' + max + '</span>'
+            + '</div>'
+            + '<div class="metric-explain">' + explanation + '</div>'
+            + '</div>';
+    }
+
+    // The two headline imbalance metrics, each with its value and explanation.
+    // Shown whenever a map is generated (accepted or best-effort) so the exact
+    // imbalance values are always printed for a successful map.
+    function metricsHtml(ev, criteria) {
+        return '<div class="quality-metrics">'
+            + metricRow('Color imbalance', ev.colorImbalance, criteria.maxColorImbalance,
+                'How far the most over- or under-represented terrain is from an even '
+                + 'share of the land hexes. 0 means every color got the same number of hexes.')
+            + metricRow('River imbalance', ev.riverImbalance, criteria.maxRiverImbalance,
+                'How much more river access the luckiest terrain has than the average '
+                + 'terrain. 0 means every color has equal access to water.')
+            + '</div>';
+    }
+
+    function renderQualityReport(report) {
+        const el = $('qualityReport');
+        if (!report) {
+            el.style.display = 'none';
+            el.innerHTML = '';
+            return;
+        }
+        const ev = report.evaluation;
+        const metrics = metricsHtml(ev, report.criteria);
+
+        let html;
+        if (report.accepted) {
+            html = '<div class="quality-head ok">Accepted map on try '
+                + report.tries + ' of ' + report.criteria.maxTries + '.</div>'
+                + metrics;
+        } else {
+            html = '<div class="quality-head bad">No map passed after '
+                + report.tries + ' tries \u2013 showing the best attempt (#'
+                + (report.best ? report.best.attempt : '?') + ').</div>'
+                + metrics;
+            const lastFew = report.failures.slice(-5);
+            if (lastFew.length) {
+                html += '<div class="quality-fails-title">Recent failures:</div><ul class="quality-fails">'
+                    + lastFew.map(f => '<li>Try ' + f.attempt + ': ' + f.reasons.join('; ') + '</li>').join('')
+                    + '</ul>';
+            }
+        }
+        el.className = 'quality-report ' + (report.accepted ? 'ok' : 'bad');
+        el.innerHTML = html;
+        el.style.display = 'block';
+    }
+
     function generateColors() {
         readDimensions();
+        const criteria = readQualityCriteria();
         const rivers = [...state.rivers].map(s => s.split(',').map(Number));
         const map = new TM.TerrainMapGenerator(state.height, state.width, state.form, rivers);
-        map.generate();
+        const report = map.generateAccepted(criteria);
         state.map = map;
+        state.qualityReport = report;
         state.selected = [];
         state.mode = 'colored';
         renderCurrent();
@@ -178,6 +263,7 @@
         state.mode = 'edit';
         state.map = null;
         state.selected = [];
+        state.qualityReport = null;
         renderCurrent();
     }
 

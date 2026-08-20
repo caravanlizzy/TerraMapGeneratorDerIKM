@@ -27,6 +27,12 @@
         <button class="primary" id="generateColors">Generate colors</button>
         <button id="backToLayout" style="display:none">Back to layout</button>
     </div>
+    <div class="controls quality-controls">
+        <span class="quality-title">Quality filter</span>
+        <label title="Maximum how far any color count may deviate from an even share of the land hexes.">Max color imbalance<input id="maxColorImbalance" type="number" min="0" step="0.5" value="3"></label>
+        <label title="Maximum how much more river access the luckiest color may have over the average color.">Max river imbalance<input id="maxRiverImbalance" type="number" min="0" step="0.5" value="10"></label>
+        <label title="How many maps to try before giving up and showing the best attempt.">Max tries<input id="maxTries" type="number" min="1" max="1000" value="50"></label>
+    </div>
 </header>
 
 <main>
@@ -43,7 +49,7 @@
         </p>
 
         <div class="legend">
-            <div class="swatch"><i id="landSwatch" style="background:#f5e6b0"></i> Land</div>
+            <div class="swatch"><i id="landSwatch" style="background:#faedbf"></i> Land</div>
             <div class="swatch"><i style="background:#4aa9e8"></i> River (editing)</div>
             <div class="swatch"><i style="background:#ffffff"></i> Water (generated)</div>
         </div>
@@ -56,6 +62,8 @@
         <div class="stat"><span>River hexes</span><b id="statRiver">0</b></div>
 
         <div id="swapStatus"></div>
+
+        <div id="qualityReport" class="quality-report" style="display:none"></div>
 
         <div class="actions">
             <button id="randomRivers">Random rivers</button>
