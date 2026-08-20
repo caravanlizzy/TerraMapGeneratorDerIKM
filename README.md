@@ -22,11 +22,22 @@ needed.
    (Original, Fire & Ice, Fjords, Loon Lakes, Onion, Archipelago).
 2. Draw the river layout: click a hex to toggle **land / river**
    (or use *Random rivers*).
-3. Click **Generate colors** to distribute the seven terrain colors over the
-   land hexes using the ported algorithm.
-4. In the colored view, click **exactly two land hexes** to swap them
+3. Optionally tune the **Quality filter** (in the header):
+   - *Max color imbalance* – how far any color's hex count may deviate from an
+     even share of the land hexes (port of the reference *number test*).
+   - *Max river imbalance* – how much more river access the luckiest color may
+     have over the average color (port of the reference *river-access test*).
+   - *Max tries* – how many maps to generate before giving up.
+4. Click **Generate colors** to distribute the seven terrain colors over the
+   land hexes using the ported algorithm. Each generated map is evaluated: maps
+   below the configured thresholds are rejected and regenerated, and the **first
+   accepted** map is shown. If no map passes within *Max tries*, the best attempt
+   is shown together with a report of the recent failures. Either way the report
+   prints the map's measured **color imbalance** and **river imbalance** values,
+   each with a short explanation of what the number means (0 = perfectly even).
+5. In the colored view, click **exactly two land hexes** to swap them
    (water hexes cannot be swapped; click a selected hex again to deselect).
-5. Export the result as **SVG / PNG / JSON**, or copy the **BGA format**.
+6. Export the result as **SVG / PNG / JSON**, or copy the **BGA format**.
 
 ## Project structure
 
