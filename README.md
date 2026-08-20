@@ -37,6 +37,9 @@ needed.
    each with a short explanation of what the number means (0 = perfectly even).
 5. In the colored view, click **exactly two land hexes** to swap them
    (water hexes cannot be swapped; click a selected hex again to deselect).
+   After a swap the report marks itself out of date; press **Re-evaluate map**
+   to recompute the color/river imbalances for the current arrangement and see
+   whether the edited map still passes the configured thresholds.
 6. Export the result as **SVG / PNG / JSON**, or copy the **BGA format**.
 
 ## Project structure

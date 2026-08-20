@@ -77,6 +77,9 @@
             state.map.set(a[0], a[1], cb);
             state.map.set(b[0], b[1], ca);
             state.selected = [];
+            // The map changed, so the shown quality metrics are now stale until
+            // the user re-evaluates.
+            if (state.qualityReport) state.qualityReport.stale = true;
         }
         renderCurrent();
     }
@@ -126,6 +129,8 @@
         $('copyBga').disabled = !colored;
         // Layout-editing controls are only meaningful in edit mode.
         $('randomRivers').disabled = colored;
+        // Re-evaluating only makes sense once a colored map exists.
+        $('reevaluate').style.display = colored ? 'inline-block' : 'none';
         // Make the primary action self-describing for the current mode.
         $('generateColors').textContent = colored ? 'Regenerate colors' : 'Generate colors';
         // Clarify what the export buttons currently act on.
@@ -230,8 +235,28 @@
         }
         const ev = report.evaluation;
         const metrics = metricsHtml(ev, report.criteria);
+        const staleNote = report.stale
+            ? '<div class="quality-stale">Map edited since this report \u2013 press '
+                + '<b>Re-evaluate map</b> to refresh the values.</div>'
+            : '';
 
         let html;
+        if (report.reevaluated) {
+            html = (report.passed
+                ? '<div class="quality-head ok">Re-evaluated after edits \u2013 map passes all thresholds.</div>'
+                : '<div class="quality-head bad">Re-evaluated after edits \u2013 map fails the thresholds.</div>')
+                + metrics;
+            if (!report.passed && report.reasons.length) {
+                html += '<div class="quality-fails-title">Issues:</div><ul class="quality-fails">'
+                    + report.reasons.map(r => '<li>' + r + '</li>').join('')
+                    + '</ul>';
+            }
+            el.className = 'quality-report ' + (report.passed ? 'ok' : 'bad');
+            el.innerHTML = staleNote + html;
+            el.style.display = 'block';
+            return;
+        }
+
         if (report.accepted) {
             html = '<div class="quality-head ok">Accepted map on try '
                 + report.tries + ' of ' + report.criteria.maxTries + '.</div>'
@@ -249,7 +274,7 @@
             }
         }
         el.className = 'quality-report ' + (report.accepted ? 'ok' : 'bad');
-        el.innerHTML = html;
+        el.innerHTML = staleNote + html;
         el.style.display = 'block';
     }
 
@@ -263,6 +288,23 @@
         state.qualityReport = report;
         state.selected = [];
         state.mode = 'colored';
+        renderCurrent();
+    }
+
+    // Re-check the current map (including any manual hex swaps) against the
+    // quality thresholds, without generating a new map.
+    function reevaluate() {
+        if (state.mode !== 'colored' || !state.map) return;
+        const criteria = readQualityCriteria();
+        const evaluation = state.map.evaluate();
+        const check = TM.evaluateQuality(evaluation, criteria);
+        state.qualityReport = {
+            reevaluated: true,
+            passed: check.passed,
+            reasons: check.reasons,
+            evaluation,
+            criteria
+        };
         renderCurrent();
     }
 
@@ -351,6 +393,7 @@
         $('newMap').onclick = generateMap;
         $('generateColors').onclick = generateColors;
         $('backToLayout').onclick = backToLayout;
+        $('reevaluate').onclick = reevaluate;
 
         $('preset').onchange = (e) => {
             const name = e.target.value;

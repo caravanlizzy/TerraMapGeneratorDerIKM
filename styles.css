@@ -52,6 +52,7 @@ aside h2 { font-size:14px; margin:0 0 10px; }
 .metric-value { font-weight:700; font-variant-numeric:tabular-nums; color:#111; }
 .metric-max { color:#888; font-size:11px; }
 .metric-explain { margin-top:2px; color:#666; line-height:1.4; }
+.quality-stale { margin-bottom:6px; padding:5px 7px; border-radius:4px; background:#fff6e0; border:1px solid #e0b64a; color:#7a5b00; font-weight:600; }
 .quality-fails-title { margin-top:6px; font-weight:600; color:#555; }
 .quality-fails { margin:4px 0 0; padding-left:18px; color:#555; }
 .quality-fails li { margin:2px 0; }
