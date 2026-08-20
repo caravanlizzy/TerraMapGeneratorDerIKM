@@ -37,7 +37,7 @@
             fill: river ? '#4aa9e8' : LAND_COLOR,
             stroke: river ? '#0b3c5d' : '#222',
             strokeWidth: 1,
-            label: (x + 1) + ',' + (y + 1),
+            label: x + ',' + y,
             labelColor: river ? '#fff' : '#222'
         };
     }
